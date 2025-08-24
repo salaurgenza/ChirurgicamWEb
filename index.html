@@ -1,0 +1,697 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Liste Intervento – Personali (LocalStorage)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a; /* slate-900 */
+            --card: rgba(255,255,255,.06);
+            --glass: rgba(255,255,255,.08);
+            --text: #e2e8f0; /* slate-200 */
+            --muted: #94a3b8; /* slate-400 */
+            --primary: #22c55e; /* green-500 */
+            --accent: #38bdf8; /* sky-400 */
+        }
+
+        html, body {
+            height: 100%;
+            background: radial-gradient(1000px 1000px at 10% 10%,rgba(56,189,248,.25),transparent 50%), radial-gradient(800px 800px at 90% 20%, rgba(34,197,94,.20), transparent 50%), var(--bg);
+            color: var(--text)
+        }
+
+        .navbar {
+            backdrop-filter: blur(10px);
+            background-color: rgba(15,23,42,.6) !important;
+        }
+
+        .brand-grad {
+            background: linear-gradient(90deg,var(--accent),var(--primary));
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .card-glass {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,.35);
+        }
+
+            .card-glass:hover {
+                transform: translateY(-2px);
+                transition: .2s ease;
+                box-shadow: 0 20px 50px rgba(0,0,0,.45);
+            }
+
+        .btn-soft {
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12);
+            color: var(--text)
+        }
+
+            .btn-soft:hover {
+                background: rgba(255,255,255,.12);
+                color: #fff
+            }
+
+        .icon-tile {
+            width: 72px;
+            height: 72px;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,.1)
+        }
+
+        .tool-tile {
+            background: rgba(255,255,255,.04);
+            border: 1px dashed rgba(255,255,255,.18);
+            border-radius: 1rem;
+            padding: .75rem
+        }
+
+        .form-control, .form-select {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.15);
+            color: var(--text)
+        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 .25rem rgba(56,189,248,.15)
+            }
+
+        .modal-content {
+            background: #0b1224;
+            border: 1px solid rgba(255,255,255,.12)
+        }
+
+        .badge-soft {
+            background: rgba(56,189,248,.15);
+            color: #e0f2fe;
+            border: 1px solid rgba(56,189,248,.25)
+        }
+
+        .empty {
+            opacity: .8;
+            border: 2px dashed rgba(255,255,255,.18);
+            border-radius: 1.25rem;
+            padding: 2rem
+        }
+
+        .pointer {
+            cursor: pointer
+        }
+
+        .storage-usage {
+            font-variant-numeric: tabular-nums;
+        }
+
+        a, a:hover {
+            color: #7dd3fc
+        }
+
+        .truncate-1 {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="#">
+                <i class="bi bi-heart-pulse me-2"></i><span class="brand-grad">ChirurgiCam</span>
+            </a>
+            <div class="ms-auto d-flex gap-2 align-items-center">
+                <span id="storageInfo" class="text-secondary small storage-usage"></span>
+                <button id="btnLoginAgain" class="btn btn-sm btn-soft d-none"><i class="bi bi-person"></i> Accedi</button>
+                <button id="btnLogout" class="btn btn-sm btn-outline-light d-none"><i class="bi bi-box-arrow-right"></i> Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <!-- Welcome / Actions -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="mb-0">Le tue liste</h2>
+                <div id="helloUser" class="text-secondary">Benvenuto</div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-soft" data-bs-toggle="modal" data-bs-target="#newListModal"><i class="bi bi-plus-lg"></i> Nuova lista</button>
+            </div>
+        </div>
+
+        <!-- Lists grid -->
+        <div id="listsGrid" class="row g-3"></div>
+
+        <!-- Detail view -->
+        <div id="detailView" class="d-none">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div id="detailIcon" class="icon-tile"></div>
+                    <div>
+                        <h3 id="detailTitle" class="mb-0"></h3>
+                        <div class="text-secondary small">Strumenti e media</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="btnEditList" class="btn btn-soft"><i class="bi bi-pencil"></i> Modifica</button>
+                    <button id="btnBack" class="btn btn-outline-light"><i class="bi bi-arrow-left"></i> Indietro</button>
+                </div>
+            </div>
+
+            <!-- Video section -->
+            <div class="card-glass p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-camera-video"></i>
+                        <strong>Video della lista</strong>
+                        <span class="text-secondary small">(max 30s)</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-soft" id="btnAttachVideo"><i class="bi bi-paperclip"></i> Allega</button>
+                        <button class="btn btn-sm btn-outline-light" id="btnRemoveVideo"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                </div>
+                <div id="videoContainer" class="ratio ratio-16x9 border border-secondary border-opacity-25 rounded-4 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,.03);">
+                    <div class="text-secondary small">Nessun video</div>
+                </div>
+            </div>
+
+            <!-- Tools section -->
+            <div class="card-glass p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-tools"></i>
+                        <strong>Strumentario</strong>
+                    </div>
+                    <button class="btn btn-sm btn-soft" id="btnAddTool"><i class="bi bi-plus-lg"></i> Aggiungi strumento</button>
+                </div>
+                <div id="toolsGrid" class="row g-3"></div>
+                <div id="emptyTools" class="empty text-center d-none mt-3">
+                    <div class="mb-2">Nessuno strumento ancora</div>
+                    <button class="btn btn-soft" id="btnAddToolEmpty"><i class="bi bi-plus-lg"></i> Aggiungi il primo</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">Accedi / Registrati</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Username</label>
+                            <input id="loginUsername" class="form-control" placeholder="es. mario" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Email (facoltativa)</label>
+                            <input id="loginEmail" type="email" class="form-control" placeholder="nome@ospedale.it" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-soft" data-bs-dismiss="modal">Annulla</button>
+                    <button id="btnDoLogin" class="btn btn-success">Entra</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New/Edit List Modal -->
+    <div class="modal fade" id="newListModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="listModalTitle">Nuova lista</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Titolo</label>
+                            <input id="listTitle" class="form-control" placeholder="es. Cataratta" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Icona</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <div id="selectedIcon" class="icon-tile pointer">👁️</div>
+                                <button class="btn btn-soft" data-bs-toggle="modal" data-bs-target="#iconPickerModal"><i class="bi bi-grid-3x3-gap"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-soft" data-bs-dismiss="modal">Annulla</button>
+                    <button id="btnSaveList" class="btn btn-success">Salva</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Icon Picker Modal -->
+    <div class="modal fade" id="iconPickerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">Scegli un'icona</h5>
+                </div>
+                <div class="modal-body">
+                    <div id="iconsGrid" class="row g-2"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-soft" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Tool Modal -->
+    <div class="modal fade" id="toolModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="toolModalTitle">Nuovo strumento</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Nome strumento</label>
+                            <input id="toolName" class="form-control" placeholder="es. Pinza" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Immagine (opzionale)</label>
+                            <input id="toolImage" type="file" accept="image/*" class="form-control" />
+                            <div class="form-text">L'immagine viene salvata localmente (base64).</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-soft" data-bs-dismiss="modal">Annulla</button>
+                    <button id="btnSaveTool" class="btn btn-success">Salva strumento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attach Video Modal -->
+    <!-- Attach Video Modal -->
+    <div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">Allega video</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">URL video (YouTube, Google Drive o MP4)</label>
+                    <input id="videoUrl" class="form-control" placeholder="https://..." />
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-soft" data-bs-dismiss="modal">Annulla</button>
+                    <button id="btnSaveVideo" class="btn btn-success">Salva video</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>// -------------------- Storage & State --------------------
+        const KEY_CURRENT = 'orplanner_current_user';
+        const KEY_USER = u => `orplanner_user_${u}`;
+
+        let currentUser = null;   // { username, email }
+        let data = null;          // { profile:{}, lists:[{id,title,icon,video:{type,url||base64}, tools:[{id,name,image}] }]}
+
+        function defaultData(username, email) {
+            return {
+                profile: { username, email: email || '', createdAt: new Date().toISOString() },
+                lists: []
+            }
+        }
+
+        function loadCurrent() {
+            const u = localStorage.getItem(KEY_CURRENT);
+            if (!u) return null;
+            const raw = localStorage.getItem(KEY_USER(u));
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch (e) { return null }
+        }
+
+        function save() {
+            if (!currentUser) return;
+            localStorage.setItem(KEY_USER(currentUser.username), JSON.stringify(data));
+            updateStorageInfo();
+        }
+
+        function updateStorageInfo() {
+            let total = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                const v = localStorage.getItem(k) || '';
+                total += k.length + v.length;
+            }
+            const kb = Math.round(total / 1024);
+            $('storageInfo').textContent = `Storage: ~${kb} KB`;
+        }
+
+        // -------------------- UI Helpers --------------------
+        const loginModal = new bootstrap.Modal('#loginModal');
+        const listModal = new bootstrap.Modal('#newListModal');
+        const iconModal = new bootstrap.Modal('#iconPickerModal');
+        const toolModal = new bootstrap.Modal('#toolModal');
+        const videoModal = new bootstrap.Modal('#videoModal');
+
+        function $(id) { return document.getElementById(id); }
+        function uid() { return Math.random().toString(36).slice(2, 9); }
+
+        function setHello() {
+            $('helloUser').textContent = currentUser ? `Ciao, ${currentUser.username}` : 'Benvenuto';
+            $('btnLogout').classList.toggle('d-none', !currentUser);
+            $('btnLoginAgain').classList.toggle('d-none', !!currentUser);
+        }
+
+        function showGrid() {
+            $('detailView').classList.add('d-none');
+            $('listsGrid').classList.remove('d-none');
+            renderLists();
+        }
+
+        function showDetail(list) {
+            $('listsGrid').classList.add('d-none');
+            $('detailView').classList.remove('d-none');
+            $('detailTitle').textContent = list.title;
+            $('detailIcon').textContent = list.icon || '📦';
+            renderVideo(list);
+            renderTools(list);
+        }
+
+        // -------------------- Login --------------------
+        function doLogin() {
+            const username = $('loginUsername').value.trim();
+            const email = $('loginEmail').value.trim();
+            if (!username) { alert('Inserisci uno username'); return; }
+
+            localStorage.setItem(KEY_CURRENT, username);
+            const raw = localStorage.getItem(KEY_USER(username));
+            data = raw ? JSON.parse(raw) : defaultData(username, email);
+            currentUser = data.profile;
+
+            save();
+            setHello();
+            renderLists();
+            loginModal.hide();
+        }
+
+        function logout() {
+            localStorage.removeItem(KEY_CURRENT);
+            currentUser = null;
+            data = null;
+            setHello();
+            showGrid();
+            loginModal.show();
+        }
+
+        // -------------------- Lists --------------------
+        function renderLists() {
+            const grid = $('listsGrid');
+            grid.innerHTML = '';
+            const lists = data?.lists || [];
+            if (lists.length === 0) {
+                grid.innerHTML = `<div class="col-12"><div class="empty text-center">
+              <div class="mb-2">Nessuna lista ancora</div>
+            </div></div>`;
+                return;
+            }
+            lists.forEach(list => {
+                const col = document.createElement('div');
+                col.className = 'col-12 col-sm-6 col-lg-4';
+                col.innerHTML = `
+              <div class="card-glass p-3 h-100 d-flex flex-column">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="icon-tile">${list.icon || '📦'}</div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold truncate-1">${list.title}</div>
+                    <div class="text-secondary small">${list.tools?.length || 0} strumenti · ${list.video ? 'Video' : 'No video'}</div>
+                  </div>
+                  <div class="dropdown">
+                    <button class="btn btn-soft btn-sm dropdown-toggle" data-bs-toggle="dropdown"></button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                      <li><a class="dropdown-item" data-action="open" data-id="${list.id}" href="#">Apri</a></li>
+                      <li><a class="dropdown-item" data-action="edit" data-id="${list.id}" href="#">Modifica</a></li>
+                      <li><a class="dropdown-item text-danger" data-action="delete" data-id="${list.id}" href="#">Elimina</a></li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="mt-auto d-flex gap-2">
+                  <button class="btn btn-soft flex-grow-1" data-action="open" data-id="${list.id}">Apri</button>
+                </div>
+              </div>`;
+                grid.appendChild(col);
+            });
+
+            grid.querySelectorAll('[data-action]').forEach(el => {
+                el.addEventListener('click', e => {
+                    e.preventDefault();
+                    const id = el.getAttribute('data-id');
+                    const action = el.getAttribute('data-action');
+                    const list = data.lists.find(l => l.id === id);
+                    if (action === 'open') showDetail(list);
+                    if (action === 'edit') openListModal(list);
+                    if (action === 'delete') deleteList(list);
+                })
+            })
+        }
+
+        function openListModal(list) {
+            $('listModalTitle').textContent = list ? 'Modifica lista' : 'Nuova lista';
+            $('listTitle').value = list?.title || '';
+            $('selectedIcon').textContent = list?.icon || '👁️';
+            $('btnSaveList').onclick = () => {
+                const title = $('listTitle').value.trim();
+                const icon = $('selectedIcon').textContent;
+                if (!title) { alert('Inserisci un titolo'); return; }
+                if (list) { list.title = title; list.icon = icon; }
+                else { data.lists.push({ id: uid(), title, icon, video: null, tools: [] }); }
+                save(); renderLists(); listModal.hide();
+            }
+            listModal.show();
+        }
+
+        function deleteList(list) {
+            if (!confirm(`Eliminare la lista "${list.title}"?`)) return;
+            data.lists = data.lists.filter(l => l.id !== list.id);
+            save(); showGrid();
+        }
+
+        // -------------------- Icons --------------------
+        const ICONS = [
+            '👁️', '👀', '🩺', '🧬', '🧪', '🩹', '💊',  '🔬', '📌', '⭐', '🔥', '⚡', '💡', '🎯', '🧠', '🫀', '🫁',
+            '🤰', '🦴', '💉', '🔪', '🧑‍⚕️', '👩‍⚕️', '➕', '🚑', '🩻', '🩸', '🛌', '🫂', '🏥', '🦠'];
+        function renderIconPicker() {
+            const grid = $('iconsGrid');
+            grid.innerHTML = '';
+            ICONS.forEach(ic => {
+                const col = document.createElement('div');
+                col.className = 'col-3 col-sm-2 col-md-1';
+                col.innerHTML = `<div class="icon-tile pointer text-center">${ic}</div>`;
+
+                col.firstChild.addEventListener('click', () => {
+                    const chosenIcon = ic.normalize(); // forza Unicode pulito
+                    $('selectedIcon').textContent = chosenIcon;
+
+                    // Se sto modificando una lista già esistente, aggiorno subito
+                    const list = getCurrentList();
+                    if (list) {
+                        list.icon = chosenIcon;
+                        save();
+                        renderLists();
+                    }
+
+                    iconModal.hide();
+                });
+
+                grid.appendChild(col);
+            });
+        }
+
+        // -------------------- Tools --------------------
+        let currentList = null;
+
+        function getCurrentList() { return data.lists.find(l => l.title === $('detailTitle').textContent); }
+
+        function renderTools(list) {
+            currentList = list;
+            const grid = $('toolsGrid'); grid.innerHTML = '';
+            const tools = list.tools || [];
+            $('emptyTools').classList.toggle('d-none', tools.length > 0);
+            tools.forEach(t => {
+                const col = document.createElement('div'); col.className = 'col-12 col-sm-6 col-lg-4';
+                col.innerHTML = `<div class="tool-tile h-100">
+              <div class="d-flex align-items-center gap-3">
+                <div class="icon-tile" style="width:56px;height:56px;font-size:28px;">
+                  ${t.image ? `<img alt="img" src="${t.image}" class="img-fluid rounded-3"/>` : '🛠️'}
+                </div>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold truncate-1">${t.name}</div>
+                  <div class="text-secondary small">${t.image ? 'Immagine caricata' : 'Nessuna immagine'}</div>
+                </div>
+                <div class="dropdown">
+                  <button class="btn btn-soft btn-sm dropdown-toggle" data-bs-toggle="dropdown"></button>
+                  <ul class="dropdown-menu dropdown-menu-dark">
+                    <li><a class="dropdown-item" data-action="edit-tool" data-id="${t.id}" href="#">Modifica</a></li>
+                    <li><a class="dropdown-item text-danger" data-action="delete-tool" data-id="${t.id}" href="#">Elimina</a></li>
+                  </ul>
+                </div>
+              </div></div>`;
+                grid.appendChild(col);
+            });
+
+            grid.querySelectorAll('[data-action="edit-tool"]').forEach(el => {
+                el.addEventListener('click', () => { const t = list.tools.find(x => x.id === el.getAttribute('data-id')); openToolModal(list, t); })
+            });
+            grid.querySelectorAll('[data-action="delete-tool"]').forEach(el => {
+                el.addEventListener('click', () => {
+                    if (!confirm('Eliminare lo strumento?')) return;
+                    list.tools = list.tools.filter(x => x.id !== el.getAttribute('data-id'));
+                    save(); renderTools(list);
+                })
+            });
+
+            $('btnAddTool').onclick = $('btnAddToolEmpty').onclick = () => openToolModal(list, null);
+        }
+
+        function openToolModal(list, tool) {
+            $('toolModalTitle').textContent = tool ? 'Modifica strumento' : 'Nuovo strumento';
+            $('toolName').value = tool?.name || '';
+            $('toolImage').value = '';
+            $('btnSaveTool').onclick = async () => {
+                const name = $('toolName').value.trim(); if (!name) { alert('Inserisci un nome'); return; }
+                let base64Img = tool?.image || null;
+                const file = $('toolImage').files[0];
+                if (file) base64Img = await fileToBase64(file);
+                if (tool) { tool.name = name; tool.image = base64Img; }
+                else { list.tools.push({ id: uid(), name, image: base64Img }); }
+                save(); renderTools(list); toolModal.hide();
+            }
+            toolModal.show();
+        }
+
+        async function fileToBase64(file) {
+            return new Promise((res, rej) => {
+                const fr = new FileReader();
+                fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file);
+            });
+        }
+
+        // -------------------- Video --------------------
+        // -------------------- Video --------------------
+        function renderVideo(list) {
+            const c = $('videoContainer');
+            c.innerHTML = '';
+
+            if (!list.video) {
+                c.innerHTML = '<div class="text-secondary small">Nessun video</div>';
+                return;
+            }
+
+            const v = list.video;
+
+            // Video YouTube
+            if (v.type === 'url' && (v.url.includes('youtube.com') || v.url.includes('youtu.be'))) {
+                const vid = v.url.includes('v=')
+                    ? v.url.split('v=')[1].split('&')[0]
+                    : v.url.split('/').pop();
+                c.innerHTML = `<iframe width="100%" height="315" 
+                        src="https://www.youtube.com/embed/${vid}" 
+                        frameborder="0" allowfullscreen></iframe>`;
+            }
+            // Video Google Drive
+            else if (v.type === 'url' && v.url.includes('drive.google.com')) {
+                const idMatch = v.url.match(/[-\w]{25,}/);
+                if (idMatch) {
+                    const fileId = idMatch[0];
+                    c.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" 
+                            width="100%" height="315" allow="autoplay"></iframe>`;
+                } else {
+                    c.innerHTML = '<div class="text-danger small">Link Google Drive non valido</div>';
+                }
+            }
+            // Video MP4 esterni
+            else if (v.type === 'url' && v.url.endsWith('.mp4')) {
+                const video = document.createElement('video');
+                video.controls = true;
+                video.playsInline = true;
+                video.className = 'w-100 h-100 rounded-4';
+                video.src = v.url;
+                c.appendChild(video);
+            }
+            else {
+                c.innerHTML = '<div class="text-danger small">Formato video non supportato</div>';
+            }
+        }
+        // Apri modale quando clicchi "Allega"
+        $('btnAttachVideo').addEventListener('click', () => {
+            $('videoUrl').value = currentList?.video?.url || '';
+            videoModal.show();
+        });
+
+        // Salva URL video dalla modale
+        $('btnSaveVideo').addEventListener('click', () => {
+            const url = $('videoUrl').value.trim();
+            if (!url) {
+                alert('Inserisci un link valido (YouTube, Google Drive o MP4)');
+                return;
+            }
+
+            currentList.video = { type: 'url', url };
+            save();
+            renderVideo(currentList);
+            videoModal.hide();
+        });
+
+        // Rimuovi video
+        $('btnRemoveVideo').addEventListener('click', () => {
+            if (!currentList) return;
+            currentList.video = null;
+            save();
+            renderVideo(currentList);
+        });
+
+
+
+        // -------------------- Events --------------------
+        $('btnDoLogin').addEventListener('click', doLogin);
+        $('btnLoginAgain').addEventListener('click', () => loginModal.show());
+        $('btnLogout').addEventListener('click', logout);
+        $('btnBack').addEventListener('click', showGrid);
+        $('btnEditList').addEventListener('click', () => { const l = getCurrentList(); if (l) openListModal(l); });
+        document.querySelectorAll('[data-bs-target="#newListModal"]').forEach(btn => { btn.addEventListener('click', () => openListModal(null)); });
+
+        // -------------------- Init --------------------
+        renderIconPicker();
+        updateStorageInfo();
+        (function init() {
+            const raw = loadCurrent();
+            if (!raw) { loginModal.show(); return; }
+            data = raw; currentUser = data.profile; setHello(); renderLists();
+        })();</script>
+
+</body>
+</html>
